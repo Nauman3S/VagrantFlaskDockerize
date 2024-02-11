@@ -43,4 +43,4 @@ This section provides detailed examples of how to use your application, includin
 
 ### Accessing the Application
 
-To access the Flask application, open `http://localhost:5000/` on your browser on the host machine.
+To access the Flask application, open [http://localhost:5000/](http://localhost:5000/) on your browser on the host machine.
