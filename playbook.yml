@@ -1,0 +1,61 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install EPEL Release for additional packages
+      dnf:
+        name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+        state: present
+
+    - name: Upgrade all packages to the latest version
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Install required packages
+      dnf:
+        name:
+          - dnf-utils
+          - device-mapper-persistent-data
+          - lvm2
+          - snapd
+        state: present
+
+    - name: Enable and start the snapd.socket service
+      systemd:
+        name: snapd.socket
+        enabled: yes
+        state: started
+
+    - name: Create symbolic link for snap
+      file:
+        src: /var/lib/snapd/snap
+        dest: /snap
+        state: link
+
+    - name: Wait for snapd to initialize (necessary on first install)
+      command: sleep 5
+
+    - name: Install Docker using snap
+      command: snap install docker
+      args:
+        creates: /snap/bin/docker
+
+    - name: Copy entire Flask app directory to VM
+      copy:
+        src: "{{ playbook_dir }}/app/"
+        dest: "/home/vagrant/app/"
+        owner: vagrant
+        group: vagrant
+        mode: '0755'
+      become: yes
+
+
+    - name: Build Docker image
+      command: /snap/bin/docker build -t flask-app /home/vagrant/app/
+      environment:
+        PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+
+    - name: Run Docker container
+      command: /snap/bin/docker run -d -p 5000:8000 --name my-flask-app flask-app
+      environment:
+        PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
