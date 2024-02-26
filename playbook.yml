@@ -1,5 +1,19 @@
 - hosts: all
+  gather_facts: yes
   become: yes
+  pre_tasks:
+    - name: Verify Ansible version
+      assert:
+        that: "ansible_version.full is version('2.15', '>=')"
+        msg: "This playbook requires at least Ansible 2.15. Please upgrade your Ansible installation."
+  vars:
+    MARIADB_PASSWORD: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          30386133623462313339626536646134393535313935613031353665653434623764393236633533
+          3962666335306265353666303531653862343533663235350a396233663032666363393961346163
+          36396534663531646366616133633865663566346239313538336537386632616237303532613431
+          3336363130373363300a376361323236363439323332313537333332353866663864663233333431
+          3137
   tasks:
     - name: Install EPEL Release for additional packages
       dnf:
@@ -38,17 +52,21 @@
         dest: /snap
         state: link
 
-    - name: Check if snapd.service and snapd.socket are active
-      ansible.builtin.command: systemctl is-active {{ item }}
-      loop:
-        - snapd.service
-        - snapd.socket
-      register: snapd_status
-      until: snapd_status.results | map(attribute='stdout') | all('==', 'active')
+    - name: Check if snapd.service is active
+      ansible.builtin.command: systemctl is-active snapd.service
+      register: snapd_service_status
+      until: snapd_service_status.stdout == "active"
       retries: 30
       delay: 2
       changed_when: false
 
+    - name: Check if snapd.socket is active
+      ansible.builtin.command: systemctl is-active snapd.socket
+      register: snapd_socket_status
+      until: snapd_socket_status.stdout == "active"
+      retries: 30
+      delay: 2
+      changed_when: false
 
     - name: Install Docker using snap
       command: snap install docker
@@ -63,14 +81,20 @@
         group: vagrant
         mode: '0755'
       become: yes
-
+    
+    - name: Generate docker-compose.yml from template
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/app/docker-compose.yml"
+        dest: "/home/vagrant/app/docker-compose.yml"
+      vars:
+        mariadb_password: "{{ MARIADB_PASSWORD }}"
 
     - name: Build Docker image
       command: /snap/bin/docker build -t flask-app /home/vagrant/app/
       environment:
         PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
 
-    - name: Run Docker container
-      command: /snap/bin/docker run -d -p 5000:8000 --name app flask-app
+    - name: Start services with Docker Compose
+      command: /snap/bin/docker-compose -f /home/vagrant/app/docker-compose.yml up -d
       environment:
         PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"

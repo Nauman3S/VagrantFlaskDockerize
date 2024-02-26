@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  app:
+    image: flask-app
+    ports:
+      - "5000:8000"
+    environment:
+      FLASK_APP: app.py
+      MARIADB_ROOT_PASSWORD: "{{ mariadb_password }}"
+      MARIADB_DATABASE: exampledb
+      MARIADB_USER: exampleuser
+      MARIADB_PASSWORD: "{{ mariadb_password }}"
+    networks:
+      - app-network
+
+  db:
+    image: mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: "{{ mariadb_password }}"
+      MARIADB_DATABASE: exampledb
+      MARIADB_USER: exampleuser
+      MARIADB_PASSWORD: "{{ mariadb_password }}"
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
+    driver: bridge
