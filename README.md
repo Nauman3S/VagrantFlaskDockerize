@@ -13,7 +13,8 @@ Ensure the following tools are installed on your system before you proceed:
 - **Vagrant**: [Download Vagrant](https://developer.hashicorp.com/vagrant/downloads)
 
 ### Installation
-
+0. Install vbguest plugin.
+  `vagrant plugin install vagrant-vbguest`
 1. **Start the Vagrant VM**  
    Change into the directory containing the `Vagrantfile` and execute the following command:
    ```

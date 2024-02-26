@@ -32,8 +32,14 @@
         dest: /snap
         state: link
 
-    - name: Wait for snapd to initialize (necessary on first install)
-      command: sleep 5
+    - name: Check if snapd is ready
+      command: systemctl is-active snapd.service
+      register: snapd_status
+      until: snapd_status.stdout == "active"
+      retries: 30
+      delay: 2
+      changed_when: false
+
 
     - name: Install Docker using snap
       command: snap install docker
@@ -56,6 +62,6 @@
         PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
 
     - name: Run Docker container
-      command: /snap/bin/docker run -d -p 5000:8000 --name my-flask-app flask-app
+      command: /snap/bin/docker run -d -p 5000:8000 --name app flask-app
       environment:
         PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"

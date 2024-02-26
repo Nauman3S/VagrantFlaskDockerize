@@ -1,3 +1,4 @@
 .vagrant/
 exporter.py
 VagrantFlaskDockerize.zip
+temp/
