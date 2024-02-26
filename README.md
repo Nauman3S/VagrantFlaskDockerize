@@ -38,6 +38,10 @@ Inside the VM, you can view the running Docker containers with:
 sudo /snap/bin/docker ps
 ```
 
+3. Checking the VBoxGuest Plugins:
+-  `lsmod | grep vboxguest`
+-  `VBoxService --version`
+
 ## Usage
 
 This section provides detailed examples of how to use your application, including any additional steps to access its features.

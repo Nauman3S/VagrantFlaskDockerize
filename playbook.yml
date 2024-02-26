@@ -25,6 +25,12 @@
         name: snapd.socket
         enabled: yes
         state: started
+    
+    - name: Enable and start the snapd.socket service
+      systemd:
+        name: snapd.service
+        enabled: yes
+        state: started
 
     - name: Create symbolic link for snap
       file:
@@ -32,10 +38,13 @@
         dest: /snap
         state: link
 
-    - name: Check if snapd is ready
-      command: systemctl is-active snapd.service
+    - name: Check if snapd.service and snapd.socket are active
+      ansible.builtin.command: systemctl is-active {{ item }}
+      loop:
+        - snapd.service
+        - snapd.socket
       register: snapd_status
-      until: snapd_status.stdout == "active"
+      until: snapd_status.results | map(attribute='stdout') | all('==', 'active')
       retries: 30
       delay: 2
       changed_when: false
